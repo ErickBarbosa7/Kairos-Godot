@@ -11,7 +11,7 @@ El menú Arcade presenta tres juegos:
 | Juego | Estado | Descripción |
 | --- | --- | --- |
 | Defensa Estelar | Disponible | Shooter espacial vertical con oleadas, puntaje y pantalla de resultado. |
-| Fiebre de Monedas | EN PROCESO | Próximo juego del catálogo. |
+| Serpiente Golosa | Disponible | Snake de 60 s: come productos, crece y encadena para subir el multiplicador. Controles: flechas o WASD. |
 | Ruta Nebular | EN PROCESO | Próximo juego del catálogo. |
 
 La aplicación incluye una marca de sucursal simulada para desarrollo local. Al configurarse, puede consultar la marca pública de una sucursal desde el API de Kairos.

@@ -15,7 +15,7 @@ cambiar el menú.
 - Carga dinámica de marca por sucursal.
 - Menú con tres juegos:
   1. Defensa Estelar — jugable.
-  2. Fiebre de Monedas — EN PROCESO.
+  2. Serpiente Golosa — jugable.
   3. Ruta Nebular — EN PROCESO.
 - Pantalla final con puntaje y espacio reservado para QR.
 
@@ -45,9 +45,8 @@ errores y puede ejecutarse con configuración simulada.
 3. Guardar la última respuesta válida para que la terminal funcione sin red.
 4. Usar el tema Kairos oscuro como fallback si no hay marca almacenada.
 5. Construir el menú como tres tarjetas grandes:
-   - Defensa Estelar inicia la partida.
-   - Fiebre de Monedas y Ruta Nebular muestran `EN PROCESO`, candado y no
-     aceptan selección.
+   - Defensa Estelar y Serpiente Golosa inician la partida.
+   - Ruta Nebular muestra `EN PROCESO`, candado y no acepta selección.
 
 **Criterio de aceptación:** cambiar de sucursal cambia la marca del menú y
 una terminal sin conexión sigue mostrando la última marca disponible.

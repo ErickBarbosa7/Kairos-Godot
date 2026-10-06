@@ -1,10 +1,11 @@
+class_name GameHud
 extends Control
-## HUD de Defensa Estelar: puntaje, tiempo, vidas, multiplicador, cuenta atrás y
+## HUD común de los juegos: puntaje, tiempo, vidas, multiplicador, cuenta atrás y
 ## diálogo de abandono. Lee el estado del juego; no lo modifica salvo por el diálogo.
 
 const MARGIN := 64.0
 
-var game: DefensaEstelar
+var game: ArcadeGame
 var _dialog: Control
 var _dialog_body: Label
 var _keep_button: Button
@@ -47,7 +48,7 @@ func _draw() -> void:
 	draw_string(label, Vector2(0, MARGIN + 22), Strings.HUD_LIVES, HORIZONTAL_ALIGNMENT_RIGHT, size.x - MARGIN, 24, TenantTheme.TEXT_SECONDARY)
 	for i in ScoreKeeper.MAX_LIVES:
 		var c := Vector2(size.x - MARGIN - 36 - i * 84.0, MARGIN + 74)
-		_draw_life(c, i < k.lives)
+		game.draw_life(self, c, i < k.lives)
 
 	# Multiplicador (abajo izquierda)
 	var mult := k.multiplier()
@@ -79,15 +80,6 @@ func _draw_big(font: Font, text: String, y: float, font_size: int, color: Color)
 	# Sombra dura detrás, como las tarjetas.
 	draw_string(font, Vector2(8, y + 8), text, HORIZONTAL_ALIGNMENT_CENTER, size.x, font_size, Color(0, 0, 0, 0.7))
 	draw_string(font, Vector2(0, y), text, HORIZONTAL_ALIGNMENT_CENTER, size.x, font_size, color)
-
-
-func _draw_life(c: Vector2, full: bool) -> void:
-	var body := PackedVector2Array([c + Vector2(0, -26), c + Vector2(24, 20), c + Vector2(0, 9), c + Vector2(-24, 20)])
-	if full:
-		draw_colored_polygon(body, TenantTheme.primary)
-		draw_polyline(PackedVector2Array([body[0], body[1], body[2], body[3], body[0]]), Color.WHITE, 3.0)
-	else:
-		draw_polyline(PackedVector2Array([body[0], body[1], body[2], body[3], body[0]]), TenantTheme.TEXT_SECONDARY, 3.0)
 
 
 func _draw_clock(c: Vector2, color: Color) -> void:

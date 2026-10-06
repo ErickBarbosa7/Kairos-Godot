@@ -38,3 +38,6 @@ const RESULT_QR_SOON := "Aquí aparecerá tu código QR"
 const RESULT_QR_NOTE := "Podrás escanearlo con Kairos para sumar tus puntos."
 const RESULT_AGAIN := "Jugar otra vez"
 const RESULT_MENU := "Volver al menú"
+
+# Serpiente Golosa
+const SNAKE_CRASH := "¡CHOQUE!"

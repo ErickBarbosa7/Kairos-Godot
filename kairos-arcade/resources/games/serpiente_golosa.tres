@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="GameInfo" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_info.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/games/serpiente_golosa/game.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "serpiente_golosa"
+title = "SERPIENTE GOLOSA"
+tagline = "Come productos, crece y no te choques."
+duration_seconds = 60
+playable = true
+scene = ExtResource("2")
+sort_order = 2

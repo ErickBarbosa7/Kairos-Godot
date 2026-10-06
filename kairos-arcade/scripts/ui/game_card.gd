@@ -74,6 +74,7 @@ func refresh() -> void:
 
 	_art.color = TenantTheme.NIGHT.lerp(TenantTheme.primary, 0.28) if not locked else TenantTheme.NIGHT_LINE.darkened(0.3)
 	_game_art.visible = not locked
+	_game_art.art_id = info.id
 	_game_art.ship_color = TenantTheme.primary
 	_game_art.star_color = TenantTheme.TEXT
 	_game_art.queue_redraw()

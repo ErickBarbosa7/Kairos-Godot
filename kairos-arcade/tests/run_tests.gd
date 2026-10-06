@@ -89,6 +89,58 @@ func _run() -> void:
 	d.tick(1.2)
 	_check(d.streak == 3, "pasado el margen la racha baja de a una")
 
+	print("SnakeBoard")
+	var b := SnakeBoard.new(10, 8)
+	b.reset(3)
+	_check(b.body.size() == 3 and b.body[0] == Vector2i(5, 4) and b.dir == Vector2i.RIGHT, "empieza centrada mirando a la derecha")
+	_check(b.advance() == SnakeBoard.Result.MOVED and b.body[0] == Vector2i(6, 4) and b.body.size() == 3, "avanza sin crecer")
+	b.queue_dir(Vector2i.LEFT)
+	_check(b.peek_head() == Vector2i(7, 4), "no permite girar en sentido contrario")
+	b.queue_dir(Vector2i.UP)
+	b.advance()
+	_check(b.body[0] == Vector2i(6, 3), "el giro encolado se aplica")
+	var g := SnakeBoard.new(10, 8)
+	g.reset(3)
+	g.advance(2)
+	_check(g.body.size() == 4, "comer crece 1 en el mismo paso")
+	g.advance()
+	_check(g.body.size() == 5, "el crecimiento pendiente se aplica después")
+	g.advance()
+	_check(g.body.size() == 5, "luego deja de crecer")
+	var w := SnakeBoard.new(10, 8)
+	w.reset(3)
+	var steps := 0
+	while w.advance() == SnakeBoard.Result.MOVED and steps < 50:
+		steps += 1
+	_check(steps == 4, "choca contra la pared derecha")
+	var s2 := SnakeBoard.new(20, 20)
+	s2.reset(6)
+	s2.advance(3)
+	s2.advance()
+	s2.advance()
+	s2.queue_dir(Vector2i.DOWN)
+	s2.advance()
+	s2.queue_dir(Vector2i.LEFT)
+	s2.advance()
+	s2.queue_dir(Vector2i.UP)
+	_check(s2.advance() == SnakeBoard.Result.CRASHED, "choca consigo misma")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var ok := true
+	for i in 100:
+		if s2.contains(s2.free_cell(rng)):
+			ok = false
+	_check(ok, "free_cell nunca cae sobre la serpiente")
+	var q := SnakeBoard.new(10, 8)
+	q.reset(3)
+	q.queue_dir(Vector2i.UP)
+	q.queue_dir(Vector2i.LEFT)
+	q.queue_dir(Vector2i.DOWN)
+	q.advance()
+	q.advance()
+	q.advance()
+	_check(q.dir == Vector2i.LEFT, "la cola de giros tiene tope de 2")
+
 	print("WaveDirector")
 	_check(WaveDirector.shooter_ratio(5.0) == 0.0, "sin disparos enemigos en los primeros 10 s")
 	_check(not WaveDirector.can_take_last_life(5.0) and WaveDirector.can_take_last_life(10.0), "la última vida es segura 10 s")

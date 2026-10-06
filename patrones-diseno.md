@@ -140,10 +140,10 @@ Tres tarjetas grandes en fila, cada una de unos 560×640 px.
         [logo] NEGOCIO                          kairos
    ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
    │  ilustración│ │  ilustración│ │  ilustración│
-   │             │ │   (apagada) │ │   (apagada) │
-   │ DEFENSA     │ │ FIEBRE DE   │ │ RUTA        │
-   │ ESTELAR     │ │ MONEDAS     │ │ NEBULAR     │
-   │ 60 s · ↑↓   │ │ 🔒 EN PROCESO│ │ 🔒 EN PROCESO│
+   │             │ │             │ │   (apagada) │
+   │ DEFENSA     │ │ SERPIENTE   │ │ RUTA        │
+   │ ESTELAR     │ │ GOLOSA      │ │ NEBULAR     │
+   │ 60 s        │ │ 60 s        │ │ 🔒 EN PROCESO│
    └─────────────┘ └─────────────┘ └─────────────┘
         ← →  elegir        ESPACIO  jugar
 ```
