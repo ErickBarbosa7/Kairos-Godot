@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="GameInfo" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_info.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/games/defensa_estelar/game.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "defensa_estelar"
+title = "DEFENSA ESTELAR"
+tagline = "Defiende la galaxia. Esquiva, dispara y junta núcleos."
+duration_seconds = 60
+playable = true
+scene = ExtResource("2")
+sort_order = 1

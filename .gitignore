@@ -27,3 +27,7 @@ crashlytics-build.properties
 # secretos de la máquina (llave privada ES256)
 machine.config.json
 *.pem
+
+# Godot
+*.exe
+*.pck
