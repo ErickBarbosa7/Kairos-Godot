@@ -57,7 +57,7 @@ Sin archivo de configuración la terminal arranca con una sucursal simulada y no
 - Las casillas son las recompensas **activas y con existencias** del negocio (`GET /public/stores/:id/rewards`). Si hay más de 8 se sortean 8; con menos, salen todas. Cada casilla tiene la misma probabilidad.
 - El resultado se decide al empezar a girar. Si el negocio no tiene recompensas, el resultado lo explica y no hay QR. Sin red usa la última lista guardada; una máquina sin vincular usa recompensas de muestra.
 - El QR lleva firmado el `reward_id`. La API comprueba que la recompensa sea de ese negocio, descuenta el stock y crea un cupón que el personal canjea en caja con su código (`docs/ACREDITACION.md` en `Kairos`).
-- La recompensa ganada se muestra con **la imagen que el administrador subió** al crearla en el panel: en la tarjeta "¡GANASTE!" y junto al QR del resultado. Las casillas de la rueda llevan solo el nombre. Las imágenes se descargan al arrancar y se guardan en memoria; si no hay red al encender la máquina, la recompensa sale sin imagen, solo con su nombre.
+- La recompensa ganada se muestra con **la imagen que el administrador subió** al crearla en el panel: en la tarjeta "¡GANASTE!" y junto al QR del resultado. Las casillas de la rueda llevan solo el nombre. Las imágenes se descargan al arrancar y se **guardan en disco** (`user://reward_images/`), así que la ruleta las muestra aunque la máquina arranque sin internet. Si el administrador cambia la imagen se descarga la nueva y la anterior se borra; solo una recompensa que nunca se descargó sale únicamente con su nombre.
 - Con `"reduce_motion": true` la rueda no gira ni hay confeti.
 
 ### El QR no se da en cada partida

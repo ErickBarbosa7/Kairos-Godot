@@ -15,9 +15,11 @@ const DEMO := [
 	{"id": "demo-4", "title": "Galleta", "description": "", "imageUrl": null, "pointsCost": 80},
 ]
 
-## Imágenes que subió el administrador, por id de recompensa. Viven en memoria: sin red al arrancar
-## una recompensa sale sin imagen, solo con su nombre.
+## Imágenes que subió el administrador, por id de recompensa. Se guardan también en disco
+## (IMAGE_DIR) para que sobrevivan a un reinicio sin red.
 static var images: Dictionary = {}
+const IMAGE_DIR := "user://reward_images"
+static var image_dir := IMAGE_DIR
 static var rewards: Array = []
 static var cache_path := CACHE_PATH
 ## Tiempo máximo que se espera por imágenes antes de mostrar la ruleta sin ellas.
@@ -101,10 +103,12 @@ static func refresh() -> void:
 	if response.ok and typeof(response.data) == TYPE_DICTIONARY:
 		rewards = sanitize(response.data.get("data"))
 		save_cache(AppConfig.store_id, rewards)
+		prune_image_cache(rewards)
 	elif response.status == 404:
 		# Sucursal inexistente o inactiva: lo guardado ya no vale.
 		rewards = []
 		clear_cache()
+		prune_image_cache([])
 	# Se bajan en segundo plano (sin await): no deben retrasar el arranque.
 	ensure_images(rewards.slice(0, PRELOAD_IMAGES))
 
@@ -120,6 +124,55 @@ static func ensure_images(list: Array) -> void:
 		var url := str(url_value) if url_value != null else ""
 		if id.is_empty() or url.is_empty() or images.has(id):
 			continue
+		var from_disk := load_image_cache(id, url)
+		if from_disk != null:
+			images[id] = from_disk
+			continue
 		var texture: ImageTexture = await ApiClient.load_image(url)
 		if texture != null:
 			images[id] = texture
+			save_image_cache(id, url, texture)
+
+
+## Ruta del archivo de esa imagen. Lleva una huella de la URL: si el administrador cambia la imagen,
+## la URL cambia y se descarga la nueva. "" si el id no es seguro para usarlo como nombre de archivo.
+static func image_path(id: String, url: String) -> String:
+	var safe := RegEx.new()
+	safe.compile("^[A-Za-z0-9-]{1,64}$")
+	if safe.search(id) == null or url.is_empty():
+		return ""
+	return image_dir.path_join("%s_%s.png" % [id, url.sha256_text().left(12)])
+
+
+static func load_image_cache(id: String, url: String) -> ImageTexture:
+	var path := image_path(id, url)
+	if path.is_empty() or not FileAccess.file_exists(path):
+		return null
+	var image := Image.load_from_file(path)
+	return ImageTexture.create_from_image(image) if image != null and not image.is_empty() else null
+
+
+static func save_image_cache(id: String, url: String, texture: Texture2D) -> void:
+	var path := image_path(id, url)
+	if path.is_empty():
+		return
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(image_dir))
+	var err := texture.get_image().save_png(path)
+	if err != OK:
+		push_warning("RewardCatalog: no se pudo guardar %s" % path)
+
+
+## Borra del disco las imágenes de recompensas que ya no existen o cuya imagen cambió.
+static func prune_image_cache(list: Array) -> void:
+	var keep: Dictionary = {}
+	for reward in list:
+		var url_value: Variant = reward.get("imageUrl")
+		var path := image_path(str(reward.get("id", "")), str(url_value) if url_value != null else "")
+		if not path.is_empty():
+			keep[path.get_file()] = true
+	var dir := DirAccess.open(image_dir)
+	if dir == null:
+		return
+	for file in dir.get_files():
+		if file.ends_with(".png") and not keep.has(file):
+			dir.remove(file)

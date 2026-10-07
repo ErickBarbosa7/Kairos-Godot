@@ -329,6 +329,7 @@ func _run() -> void:
 	_check(with_prize.reward_id == "reward-1" and not without.has("reward_id"), "el QR lleva reward_id solo si hubo recompensa")
 	_check(with_prize.exp - with_prize.iat == 60 and with_prize.store_id == "store-9" and with_prize.machine_id == "machine-9", "el QR dura 60 s y lleva sucursal y máquina")
 	_check(HelpTexts.topic("roulette").blocks.size() == 3, "la ruleta tiene su ayuda")
+	catalog.image_dir = "user://test_reward_images"
 	catalog.images = {}
 	var texture := ImageTexture.create_from_image(Image.create(2, 2, false, Image.FORMAT_RGBA8))
 	catalog.images["a"] = texture
@@ -341,6 +342,21 @@ func _run() -> void:
 	])
 	_check(catalog.images.size() == 1 and catalog.images["a"] == texture, "ensure_images no vuelve a bajar lo que ya tiene ni inventa imágenes")
 	_check(Time.get_ticks_msec() - t0 < 1000, "sin imagen ni red no se queda esperando")
+	catalog.images = {}
+	var disk_url := "http://no-existe.invalid/foto.png"
+	var photo := Image.create(4, 3, false, Image.FORMAT_RGBA8)
+	photo.fill(Color.RED)
+	catalog.save_image_cache("r-1", disk_url, ImageTexture.create_from_image(photo))
+	await catalog.ensure_images([{"id": "r-1", "imageUrl": disk_url}])
+	_check(catalog.images.has("r-1") and catalog.images["r-1"].get_width() == 4, "sin red, la imagen sale del disco tras un reinicio")
+	_check(catalog.load_image_cache("r-1", "http://no-existe.invalid/otra.png") == null, "si cambia la URL, la imagen vieja ya no sirve")
+	_check(catalog.image_path("../escape", disk_url).is_empty() and catalog.image_path("r-1", "").is_empty(), "un id con caracteres raros no se usa como nombre de archivo")
+	catalog.save_image_cache("viejo", disk_url, ImageTexture.create_from_image(photo))
+	catalog.prune_image_cache([{"id": "r-1", "imageUrl": disk_url}])
+	_check(catalog.load_image_cache("r-1", disk_url) != null and catalog.load_image_cache("viejo", disk_url) == null, "limpiar borra lo que ya no existe y conserva lo vigente")
+	catalog.prune_image_cache([])
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(catalog.image_dir))
+	catalog.image_dir = "user://reward_images"
 	catalog.images = {}
 
 	print("QrCode")
