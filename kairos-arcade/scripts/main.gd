@@ -10,6 +10,9 @@ var _done := false
 
 
 func _ready() -> void:
+	if AppConfig.needs_link():
+		Router.to_link.call_deferred()
+		return
 	_build()
 	_load_brand()
 	var elapsed := 0.0
@@ -24,6 +27,7 @@ func _load_brand() -> void:
 	var source := await BrandService.load_brand()
 	if source == BrandService.Source.FALLBACK and not AppConfig.simulated:
 		push_warning("Main: sin marca de red ni caché, se usa el tema Kairos")
+	await RewardCatalog.refresh()
 	_done = true
 
 

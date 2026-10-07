@@ -104,3 +104,27 @@ static func _focus_box(border: Color, width: int) -> StyleBoxFlat:
 	s.border_color = border
 	s.set_corner_radius_all(2)
 	return s
+
+
+## Campo de texto grande para el teclado. Foco con borde grueso blanco.
+static func line_edit(placeholder: String, secret: bool = false) -> LineEdit:
+	var e := LineEdit.new()
+	e.placeholder_text = placeholder
+	e.secret = secret
+	e.custom_minimum_size = Vector2(0, 88)
+	e.add_theme_font_override("font", text(600))
+	e.add_theme_font_size_override("font_size", 36)
+	e.add_theme_color_override("font_color", TenantTheme.TEXT)
+	e.add_theme_color_override("font_placeholder_color", TenantTheme.TEXT_SECONDARY)
+	e.add_theme_color_override("caret_color", TenantTheme.primary)
+	var normal := _button_box(TenantTheme.NIGHT_RAISED, TenantTheme.NIGHT_LINE, 4)
+	normal.shadow_size = 0
+	normal.content_margin_left = 24
+	normal.content_margin_right = 24
+	var focus := _button_box(TenantTheme.NIGHT_RAISED, Color.WHITE, 8)
+	focus.shadow_size = 0
+	focus.content_margin_left = 24
+	focus.content_margin_right = 24
+	e.add_theme_stylebox_override("normal", normal)
+	e.add_theme_stylebox_override("focus", focus)
+	return e

@@ -31,3 +31,7 @@ machine.config.json
 # Godot
 *.exe
 *.pck
+
+# Ajustes locales de Godot (el instalador crea el suyo junto al ejecutable)
+override.cfg
+/builds/

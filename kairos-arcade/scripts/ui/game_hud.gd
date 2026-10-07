@@ -34,15 +34,16 @@ func _draw() -> void:
 	draw_string(label, Vector2(MARGIN, MARGIN + 22), Strings.HUD_SCORE, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, TenantTheme.TEXT_SECONDARY)
 	draw_string(display, Vector2(MARGIN, MARGIN + 112), str(k.score), HORIZONTAL_ALIGNMENT_LEFT, -1, 96, TenantTheme.REWARD)
 
-	# Tiempo (arriba centro): en los últimos 10 s pasa a advertencia y late.
-	var left: float = game.time_left()
-	var urgent := left <= 10.0 and game.phase == game.Phase.PLAYING
-	var time_color := TenantTheme.WARNING if urgent else TenantTheme.TEXT
-	var pulse := 1.0 + (sin(left * TAU) * 0.06 if urgent and not AppConfig.reduce_motion else 0.0)
-	draw_string(label, Vector2(0, MARGIN + 22), Strings.HUD_TIME, HORIZONTAL_ALIGNMENT_CENTER, size.x, 24, TenantTheme.TEXT_SECONDARY)
-	draw_string(display, Vector2(0, MARGIN + 112), "%02d" % ceili(left), HORIZONTAL_ALIGNMENT_CENTER, size.x, int(96 * pulse), time_color)
-	if urgent:
-		_draw_clock(Vector2(size.x / 2 + 88, MARGIN + 70), time_color)
+	# Tiempo (arriba centro): se muestra solo en juegos con límite de duración.
+	if game.has_time_limit():
+		var left: float = game.time_left()
+		var urgent := left <= 10.0 and game.phase == game.Phase.PLAYING
+		var time_color := TenantTheme.WARNING if urgent else TenantTheme.TEXT
+		var pulse := 1.0 + (sin(left * TAU) * 0.06 if urgent and not AppConfig.reduce_motion else 0.0)
+		draw_string(label, Vector2(0, MARGIN + 22), Strings.HUD_TIME, HORIZONTAL_ALIGNMENT_CENTER, size.x, 24, TenantTheme.TEXT_SECONDARY)
+		draw_string(display, Vector2(0, MARGIN + 112), "%02d" % ceili(left), HORIZONTAL_ALIGNMENT_CENTER, size.x, int(96 * pulse), time_color)
+		if urgent:
+			_draw_clock(Vector2(size.x / 2 + 88, MARGIN + 70), time_color)
 
 	# Vidas (arriba derecha): la vida perdida es contorno vacío, no solo color apagado.
 	draw_string(label, Vector2(0, MARGIN + 22), Strings.HUD_LIVES, HORIZONTAL_ALIGNMENT_RIGHT, size.x - MARGIN, 24, TenantTheme.TEXT_SECONDARY)
@@ -58,7 +59,31 @@ func _draw() -> void:
 	draw_rect(Rect2(bar.position, Vector2(bar.size.x * k.streak_progress(), bar.size.y)), TenantTheme.primary)
 	draw_rect(bar, TenantTheme.TEXT_SECONDARY, false, 3.0)
 
+	_draw_goal(label)
 	_draw_banner(display)
+
+
+func _draw_goal(label: Font) -> void:
+	var goal: int = game.qr_goal
+	if goal <= 0:
+		return
+	var w := 560.0
+	var x := (size.x - w) / 2.0
+	var y := size.y - MARGIN - 6.0
+	var reached: bool = game.goal_reached
+	var progress := clampf(float(game.keeper.score) / goal, 0.0, 1.0)
+	var color := TenantTheme.SUCCESS if reached else TenantTheme.primary
+	var text := Strings.HUD_GOAL_DONE if reached else Strings.HUD_GOAL % goal
+	var text_x := x
+	if reached:
+		# Marca de verificación dibujada: el estado no depende solo del color.
+		draw_polyline(PackedVector2Array([Vector2(x, y - 24), Vector2(x + 12, y - 12), Vector2(x + 32, y - 38)]), color, 6.0)
+		text_x = x + 48.0
+	draw_string(label, Vector2(text_x, y - 16), text, HORIZONTAL_ALIGNMENT_LEFT, w, 30, TenantTheme.SUCCESS if reached else TenantTheme.TEXT)
+	var bar := Rect2(Vector2(x, y), Vector2(w, 18))
+	draw_rect(bar, TenantTheme.NIGHT_RAISED)
+	draw_rect(Rect2(bar.position, Vector2(w * progress, bar.size.y)), color)
+	draw_rect(bar, TenantTheme.TEXT_SECONDARY, false, 3.0)
 
 
 func _draw_banner(display: Font) -> void:

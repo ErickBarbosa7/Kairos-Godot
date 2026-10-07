@@ -12,3 +12,5 @@ duration_seconds = 60
 playable = true
 scene = ExtResource("2")
 sort_order = 2
+qr_goal = 10000
+how_to_play = "Mueve la serpiente con las flechas (o WASD). Come los productos para crecer y sumar puntos; la estrella da más pero desaparece pronto. Si chocas con la pared o contigo pierdes una vida (tienes 3). Come seguido para subir el multiplicador."

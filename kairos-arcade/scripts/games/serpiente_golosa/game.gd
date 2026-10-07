@@ -20,7 +20,7 @@ const REGULAR_ITEMS := 2
 const STAR_EVERY := 12.0
 const STAR_LIFE := 6.0
 const STEP_SLOW := 0.16
-const STEP_FAST := 0.075
+const STEP_FAST := 0.09
 const CRASH_PAUSE := 0.7
 const BLINK_SECONDS := 1.2
 const BASE_POINTS := 100
@@ -67,7 +67,7 @@ func _on_end() -> void:
 
 func _step_interval() -> float:
 	var grown := float(board.body.size() - START_LENGTH)
-	return lerpf(STEP_SLOW, STEP_FAST, clampf(grown / 25.0, 0.0, 1.0))
+	return lerpf(STEP_SLOW, STEP_FAST, clampf(grown / 30.0, 0.0, 1.0))
 
 
 func _read_input() -> void:

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="GameInfo" format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game_info.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/games/memory_rush/game.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = "memory_rush"
+title = "MEMORY RUSH"
+tagline = "Memoriza secuencias cada vez más largas antes de que desaparezcan."
+duration_seconds = 60
+has_time_limit = false
+playable = true
+scene = ExtResource("2")
+sort_order = 5
+qr_goal = 3500
+how_to_play = "Mira qué botones se iluminan y repite la secuencia con las flechas ← ↑ ↓ →. Cada ronda agrega un paso y suma puntos al completarla. Si te equivocas pierdes una vida (tienes 3) y vuelves a intentarlo. Completa rondas seguidas para subir el multiplicador."

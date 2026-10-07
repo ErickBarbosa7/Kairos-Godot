@@ -15,6 +15,9 @@ func _draw() -> void:
 	if art_id == "serpiente_golosa":
 		_draw_snake()
 		return
+	if art_id == "memory_rush":
+		_draw_memory()
+		return
 	for star in STARS:
 		draw_circle(star * size, 4.0, star_color)
 	var c := Vector2(size.x / 2, size.y * 0.64)
@@ -42,3 +45,15 @@ func _draw_snake() -> void:
 	draw_circle(food, cell * 0.15, Color(star_color, 0.0))
 	draw_arc(food, cell * 0.38, 0.0, TAU, 20, Color.WHITE, 3.0)
 	draw_circle(food, cell * 0.14, TenantTheme.NIGHT)
+
+
+func _draw_memory() -> void:
+	var pad_size := Vector2(size.x * 0.25, size.y * 0.28)
+	var origin := Vector2(size.x * 0.2, size.y * 0.17)
+	var colors := [ship_color, TenantTheme.REWARD, TenantTheme.SUCCESS, TenantTheme.DANGER]
+	for i in 4:
+		var col := i % 2
+		var row := i / 2
+		var rect := Rect2(origin + Vector2(col * (pad_size.x + 16), row * (pad_size.y + 16)), pad_size)
+		draw_rect(rect, colors[i].darkened(0.16))
+		draw_rect(rect, Color.WHITE, false, 3.0)

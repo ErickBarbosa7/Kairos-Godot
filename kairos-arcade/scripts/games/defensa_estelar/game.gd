@@ -19,7 +19,7 @@ class Ent:
 	var phase := 0.0
 	var cooldown := 0.0
 
-const SHIP_Y := 960.0
+const SHIP_Y := 880.0
 const SHIP_SPEED := 900.0
 const SHIP_MIN_X := 96.0
 const SHIP_MAX_X := 1824.0
@@ -172,7 +172,7 @@ func _enemy_shoot(e: Ent) -> void:
 	var b := Ent.new()
 	b.pos = e.pos + Vector2(0, e.radius)
 	var dir := (Vector2(ship_x, SHIP_Y) - b.pos).normalized()
-	b.vel = dir * 360.0
+	b.vel = dir * 300.0
 	b.radius = 12.0
 	_enemy_bullets.append(b)
 

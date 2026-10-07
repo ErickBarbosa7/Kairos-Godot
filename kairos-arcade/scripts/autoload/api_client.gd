@@ -41,11 +41,30 @@ func load_image(url: String) -> ImageTexture:
 	return ImageTexture.create_from_image(image)
 
 
-func _request(url: String) -> Dictionary:
+## Petición con cuerpo JSON y token opcional. A diferencia de get_json no depende del modo
+## simulado: se usa para vincular la máquina, que todavía no tiene configuración.
+## Devuelve { ok, status, data }. status 0 significa sin red o tiempo agotado.
+func send_json(method: HTTPClient.Method, base_url: String, path: String, body: Variant = null, token: String = "") -> Dictionary:
+	var headers := PackedStringArray(["Accept: application/json"])
+	var payload := ""
+	if body != null:
+		headers.append("Content-Type: application/json")
+		payload = JSON.stringify(body)
+	if not token.is_empty():
+		headers.append("Authorization: Bearer " + token)
+	var result := await _request(base_url.rstrip("/") + path, headers, method, payload)
+	if result.error != OK:
+		return {"ok": false, "status": 0, "data": null}
+	var status: int = result.status
+	var data: Variant = JSON.parse_string((result.body as PackedByteArray).get_string_from_utf8())
+	return {"ok": status >= 200 and status < 300, "status": status, "data": data}
+
+
+func _request(url: String, headers: PackedStringArray = PackedStringArray(), method: HTTPClient.Method = HTTPClient.METHOD_GET, body: String = "") -> Dictionary:
 	var http := HTTPRequest.new()
 	http.timeout = TIMEOUT_SECONDS
 	add_child(http)
-	var err := http.request(url)
+	var err := http.request(url, headers, method, body)
 	if err != OK:
 		http.queue_free()
 		return {"error": err, "status": 0, "body": PackedByteArray()}

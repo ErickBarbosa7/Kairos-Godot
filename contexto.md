@@ -23,7 +23,7 @@ El proyecto de Godot vive en `kairos-arcade/`.
 1. El negocio registra una sucursal y una máquina en el panel Kairos.
 2. La terminal inicia con el identificador de la sucursal y carga su marca.
 3. El cliente elige un juego y juega una partida corta.
-4. La terminal genera un QR firmado con el resultado.
+4. Si el puntaje llega a la meta del juego, la persona gira una ruleta con las recompensas del negocio y la terminal genera un QR firmado con la que salió. Si no llega, no hay ruleta ni QR: así un negocio no regala recompensas en cada partida.
 5. La Wallet valida el QR y acredita los puntos al cliente.
 6. El cliente solicita un premio y el personal lo entrega desde caja.
 
@@ -34,8 +34,8 @@ El proyecto de Godot vive en `kairos-arcade/`.
 - La API ya expone `GET /public/stores/:id/brand`, que devuelve nombre,
   logo, colores y modo de tema de una sucursal activa.
 - El panel permite registrar máquinas con llave pública ES256 o EdDSA.
-- Aún faltan la firma del QR desde Godot y la validación/acreditación del QR
-  desde la futura Wallet.
+- La terminal ya firma el QR con ES256 (implementado en GDScript, verificado
+  con `jose`). La API ya acredita esos QR (`POST /wallet/claims`, ver `docs/ACREDITACION.md` en el repositorio `Kairos`); falta la Wallet PWA y el inicio de sesión del cliente.
 
 ## Diseño de la terminal
 

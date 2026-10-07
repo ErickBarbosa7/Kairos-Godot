@@ -1,19 +1,26 @@
 extends Control
-## Menú de juegos: tres tarjetas, navegación con las acciones del InputMap.
+## Menú de juegos: catálogo desplazable y navegación con las acciones del InputMap.
 
 const GAMES_DIR := "res://resources/games"
 const MARGIN := 64
+## Acceso oculto a la vinculación: Esc cinco veces seguidas en menos de 4 s.
+const HIDDEN_PRESSES := 5
+const HIDDEN_WINDOW_MS := 4000
 
 var _cards: Array[GameCard] = []
 var _index := 0
+var _game_scroller: ScrollContainer
 var _logo: TextureRect
 var _logo_fallback: ColorRect
 var _name: Label
 var _notice: Label
+var _hidden_presses: Array[int] = []
+var _help: HelpOverlay
 
 
 func _ready() -> void:
 	_build()
+	_help = HelpOverlay.attach(self, "menu", _help_extra, false)
 	TenantTheme.theme_changed.connect(_apply_brand)
 	_apply_brand()
 	_select(_first_playable())
@@ -28,6 +35,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_select(_index + 1)
 	elif event.is_action_pressed("confirm"):
 		_confirm()
+	elif event.is_action_pressed("move_up"):
+		_open_scoreboard()
+	elif event.is_action_pressed("move_down"):
+		_help.open()
+	elif event.is_action_pressed("back"):
+		_count_hidden_press()
 	else:
 		return
 	viewport.set_input_as_handled()
@@ -52,11 +65,18 @@ func _build() -> void:
 	column.add_child(_build_header())
 	column.add_child(_build_title())
 
+	_game_scroller = ScrollContainer.new()
+	_game_scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_game_scroller.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_game_scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(_game_scroller)
+
 	var row := HBoxContainer.new()
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 40)
-	column.add_child(row)
+	_game_scroller.add_child(row)
 	for game in _load_games():
 		var card := GameCard.new()
 		card.setup(game)
@@ -119,8 +139,10 @@ func _build_title() -> Control:
 func _build_footer() -> Control:
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 40)
-	footer.add_child(_help(Strings.KEY_LEFT_RIGHT, Strings.HELP_CHOOSE))
-	footer.add_child(_help(Strings.KEY_SPACE, Strings.HELP_PLAY))
+	footer.add_child(_help_chip(Strings.KEY_LEFT_RIGHT, Strings.HELP_CHOOSE))
+	footer.add_child(_help_chip(Strings.KEY_SPACE, Strings.HELP_PLAY))
+	footer.add_child(_help_chip(Strings.KEY_UP, Strings.HELP_SCOREBOARD))
+	footer.add_child(_help_chip(Strings.KEY_DOWN, Strings.HELP_LABEL))
 
 	_notice = Label.new()
 	_notice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -128,10 +150,14 @@ func _build_footer() -> Control:
 	_notice.add_theme_font_override("font", UiKit.text(600))
 	_notice.add_theme_font_size_override("font_size", 28)
 	footer.add_child(_notice)
+	# Deja libre la esquina del botón de ayuda.
+	var corner := Control.new()
+	corner.custom_minimum_size = Vector2(HelpOverlay.BUTTON_SIZE + 24, 0)
+	footer.add_child(corner)
 	return footer
 
 
-func _help(key: String, action: String) -> Control:
+func _help_chip(key: String, action: String) -> Control:
 	var box := HBoxContainer.new()
 	box.add_theme_constant_override("separation", 16)
 	var chip := PanelContainer.new()
@@ -190,6 +216,12 @@ func _select(index: int) -> void:
 	for i in _cards.size():
 		_cards[i].set_selected(i == _index)
 	_notice.text = ""
+	call_deferred("_reveal_selected")
+
+
+func _reveal_selected() -> void:
+	if _game_scroller and not _cards.is_empty():
+		_game_scroller.ensure_control_visible(_cards[_index])
 
 
 func _confirm() -> void:
@@ -202,3 +234,28 @@ func _confirm() -> void:
 		return
 	if not Router.start_game(card.info):
 		_notice.text = Strings.GAME_COMING % card.info.title
+
+
+func _open_scoreboard() -> void:
+	if _cards.is_empty() or not _cards[_index].info.playable:
+		return
+	Router.to_scoreboard(_cards[_index].info.id, Router.MENU)
+
+
+func _count_hidden_press() -> void:
+	var now := Time.get_ticks_msec()
+	_hidden_presses.append(now)
+	_hidden_presses = _hidden_presses.filter(func(t: int) -> bool: return now - t <= HIDDEN_WINDOW_MS)
+	if _hidden_presses.size() >= HIDDEN_PRESSES:
+		_hidden_presses.clear()
+		Router.to_link()
+
+
+## Instrucciones del juego seleccionado para el panel de ayuda.
+func _help_extra() -> Array:
+	if _cards.is_empty():
+		return []
+	var info := _cards[_index].info
+	if info.how_to_play.is_empty():
+		return []
+	return [{"heading": Strings.HELP_HOW_TO_PLAY % info.title, "text": info.how_to_play}]

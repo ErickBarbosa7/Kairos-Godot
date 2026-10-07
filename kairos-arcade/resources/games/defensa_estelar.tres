@@ -12,3 +12,5 @@ duration_seconds = 60
 playable = true
 scene = ExtResource("2")
 sort_order = 1
+qr_goal = 22000
+how_to_play = "Mueve la nave con ← → (o A D) y mantén ESPACIO para disparar. Destruye enemigos, junta los núcleos amarillos y esquiva los disparos rosas. Tienes 3 vidas. Cada acierto seguido sube el multiplicador hasta x5; un impacto lo reinicia."

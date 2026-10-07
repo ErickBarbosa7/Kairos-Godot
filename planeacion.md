@@ -81,6 +81,16 @@ durante 60 segundos y volver al menú sin reiniciar la aplicación.
 6. Añadir al monorepo Kairos la ruta que validará el QR cuando se construya la
    Wallet; esa ruta verificará firma, expiración, máquina, tenant y uso único.
 
+**Estado:** pasos 1 a 5 hechos. El algoritmo es **ES256**: GDScript no trae firma
+de curvas elípticas, así que se implementó ECDSA P-256 con nonce determinista
+(RFC 6979) en `scripts/crypto/`. Coincide con el vector de prueba del RFC y `jose`
+verifica el JWT y rechaza uno alterado. El QR se genera con un codificador propio
+(`scripts/qr/`) validado decodificando con `zbarimg`. Solo se genera cuando la
+partida llega a la meta de recompensa del juego (`qr_goal`) y, tras girar la ruleta,
+el QR lleva la recompensa que salió (`reward_id`). El paso 6 está hecho en la API
+(`POST /wallet/claims`: verifica firma, vencimiento, máquina, negocio y uso único);
+falta la Wallet PWA que escaneará el QR y el inicio de sesión del cliente.
+
 **Criterio de aceptación:** el QR firmado por Godot es verificable desde la
 API y no puede reutilizarse al acreditarse.
 

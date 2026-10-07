@@ -97,7 +97,8 @@ func refresh() -> void:
 	else:
 		_chip.visible = true
 		_chip.add_theme_stylebox_override("panel", UiKit.chip_style(Color.TRANSPARENT, TenantTheme.NIGHT_LINE))
-		_chip_label.text = Strings.DURATION % info.duration_seconds
+		var goal := QrPolicy.goal_for(info)
+		_chip_label.text = Strings.DURATION_GOAL % [info.duration_seconds, goal] if goal > 0 else Strings.DURATION % info.duration_seconds
 		_chip_label.add_theme_color_override("font_color", TenantTheme.TEXT_SECONDARY)
 
 

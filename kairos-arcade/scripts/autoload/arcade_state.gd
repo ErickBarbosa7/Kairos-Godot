@@ -13,19 +13,16 @@ var game_id: String = ""
 var score: int = 0
 var last_score: int = 0
 var last_reason: String = ""
-var best_score: int = 0
 var last_was_record: bool = false
-## Guardar el mejor resultado en disco. Las pruebas lo desactivan.
-var persist: bool = true
-
-const BEST_PATH := "user://best_score.json"
-
-
-func _ready() -> void:
-	if persist and FileAccess.file_exists(BEST_PATH):
-		var data: Variant = JSON.parse_string(FileAccess.open(BEST_PATH, FileAccess.READ).get_as_text())
-		if typeof(data) == TYPE_DICTIONARY:
-			best_score = int(data.get("best", 0))
+## Puesto en el marcador de la última partida (0 = no entró) y sus iniciales.
+var last_rank: int = 0
+var last_initials: String = ""
+## Verdadero si la última partida entra al marcador y faltan las iniciales.
+var entry_pending: bool = false
+## Verdadero si la partida llegó a la meta y falta girar la ruleta.
+var reward_pending: bool = false
+## Recompensa que salió en la ruleta ({} si no hubo). Es la que viaja en el QR.
+var won_reward: Dictionary = {}
 
 
 func go_to(next: Screen) -> void:
@@ -53,23 +50,20 @@ func add_score(points: int) -> void:
 	score_changed.emit(score)
 
 
-## Cierra la partida. Devuelve verdadero si superó el mejor resultado local.
+## Cierra la partida. Devuelve verdadero si superó el mejor resultado de ese juego.
 func finish_game(reason: String) -> bool:
 	if screen != Screen.PLAYING:
 		return false
 	last_score = score
 	last_reason = reason
-	var is_record := score > best_score
-	last_was_record = is_record
-	if is_record:
-		best_score = score
-		if persist:
-			var file := FileAccess.open(BEST_PATH, FileAccess.WRITE)
-			if file:
-				file.store_string(JSON.stringify({"best": best_score}))
+	last_rank = 0
+	last_initials = ""
+	won_reward = {}
+	last_was_record = score > ScoreStore.best(game_id)
+	entry_pending = ScoreStore.qualifies(game_id, score)
 	game_finished.emit(last_score, last_reason)
 	go_to(Screen.RESULT)
-	return is_record
+	return last_was_record
 
 
 func back_to_menu() -> void:
