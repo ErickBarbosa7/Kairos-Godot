@@ -12,10 +12,10 @@ El menú Arcade presenta un catálogo desplazable de juegos:
 | --- | --- | --- |
 | Defensa Estelar | Disponible | Shooter espacial vertical con oleadas, puntaje y pantalla de resultado. |
 | Serpiente Golosa | Disponible | Snake de 60 s: come productos, crece y encadena para subir el multiplicador. Controles: flechas o WASD. |
-| Ruta Nebular | EN PROCESO | Próximo juego del catálogo. |
-| Lane Racer | EN PROCESO | Cambia de carril y evita el tráfico. |
-| Memory Rush | EN PROCESO | Memoriza secuencias cada vez más largas. |
-| Stack Tower | EN PROCESO | Apila bloques y construye la torre más alta. |
+| Ruta Nebular | Disponible | Rompe bloques con una esfera y evita perder tus vidas. |
+| Lane Racer | Disponible | Cambia de carril y evita el tráfico. |
+| Memory Rush | Disponible | Memoriza secuencias cada vez más largas. |
+| Stack Tower | Disponible | Apila bloques y construye la torre más alta. |
 
 La aplicación incluye una marca de sucursal simulada para desarrollo local. Al configurarse, puede consultar la marca pública de una sucursal desde el API de Kairos.
 
@@ -24,6 +24,7 @@ La aplicación incluye una marca de sucursal simulada para desarrollo local. Al 
 - [Contexto](contexto.md): producto, flujo y restricciones de seguridad.
 - [Planeación](planeacion.md): fases de trabajo.
 - [Patrones de diseño](patrones-diseno.md): espacio para decisiones de diseño, experiencia y patrones de Godot.
+- [Actualizaciones de escritorio](docs/ACTUALIZACIONES.md): launcher firmado para Linux y Windows; macOS pendiente.
 - En el repositorio principal `Kairos`: `docs/ARQUITECTURA.md`, `docs/ESQUEMA.md` y `docs/DISENO.md`.
 
 ## Requisitos
@@ -147,7 +148,7 @@ Sigue funcionando si prefieres hacerlo a mano: genera la llave con `pnpm --filte
 
 La app se instala con un instalador (Windows) o un script (Linux), arranca sola, se abre a pantalla completa y se vuelve a abrir si falla. La guía completa, qué se probó y qué no, está en [`installer/README.md`](installer/README.md).
 
-Todas las pantallas tienen un botón **?** (o la tecla **H**) que explica la pantalla y qué es Kairos.
+Las pantallas tienen un botón **?** (o la tecla **H**) con una ayuda muy corta: tres pasos y una línea sobre la pantalla.
 
 ## Pruebas
 
@@ -168,3 +169,7 @@ kairos-arcade/
 ├── tests/        # Pruebas ejecutables en modo headless
 └── project.godot
 ```
+
+## Tabletas Android e iPad
+
+Kairos Arcade incluye un preset **Web PWA** y controles táctiles para operar en una tableta horizontal del negocio. La terminal web se vincula con un código temporal desde el panel Kairos; los QR los firma la API y la PWA no guarda llaves privadas. Consulta [`docs/PWA_TABLETA.md`](docs/PWA_TABLETA.md) para publicar e instalarla.

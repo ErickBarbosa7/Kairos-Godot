@@ -1,0 +1,37 @@
+name: Compilar launcher
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "launcher-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            runner: ubuntu-latest
+            binary: kairos-arcade-launcher
+            artifact: KairosArcadeLauncher-linux-x86_64
+          - name: Windows x86_64
+            runner: windows-latest
+            binary: kairos-arcade-launcher.exe
+            artifact: KairosArcadeLauncher-windows-x86_64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compilar launcher
+        run: cargo build --release --manifest-path updater/Cargo.toml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: updater/target/release/${{ matrix.binary }}
+          if-no-files-found: error

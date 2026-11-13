@@ -64,8 +64,8 @@ Una aplicación no puede impedir Alt+Tab, la tecla Windows ni Ctrl+Alt+Supr. Par
 - **Linux:** usa una sesión de kiosco dedicada (un usuario sin escritorio completo) o un gestor de ventanas de una sola aplicación.
 - En ambos: desactiva la suspensión y los avisos del sistema, y no dejes el teclado conectado si no hace falta.
 
-## Botones de ayuda
+## Botón de ayuda
 
-Todas las pantallas (menú, iniciales, marcador, resultado y vinculación) tienen un botón **?** en la esquina inferior derecha que explica la pantalla y qué es Kairos. También se abre con la tecla **H** y, en el menú, con **↓**. Para una cabina solo con botones, asigna uno de ellos a la tecla H. El texto vive en `scripts/core/help_texts.gd`; las instrucciones de cada juego, en su archivo de `resources/games/`.
+Las pantallas del cliente (menú, iniciales, marcador, ruleta, resultado) y la de vinculación tienen un botón **?** en la esquina inferior derecha. La ayuda es **muy corta a propósito**: tres pasos ("Juega y llega a la meta", "Gira la ruleta", "Escanea tu código y recibe tu recompensa") y una línea sobre la pantalla actual; en el menú añade las reglas del juego seleccionado. Se cierra sola a los 30 s.
 
-Dentro de la partida no hay botón de ayuda, para no distraer ni pausar el juego.
+También se abre con la tecla **H** y, en el menú, con **↓**. Para una cabina solo con botones, asigna uno a la tecla H. El texto vive en `scripts/core/help_texts.gd`; las reglas de cada juego, en su archivo de `resources/games/`. Dentro de la partida no hay botón.
