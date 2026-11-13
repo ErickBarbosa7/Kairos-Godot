@@ -5,6 +5,10 @@ const CONFIG_FILE := "machine.config.json"
 const SIMULATED_STORE_ID := "00000000-0000-0000-0000-000000000000"
 
 var api_url: String = _default_api_url()
+## Dirección de la Wallet. El QR lleva este enlace para que la cámara del teléfono abra la Wallet sola.
+var wallet_url: String = _default_wallet_url()
+## La exportación web usa la sesión HttpOnly de /terminal; nunca contiene una llave privada.
+var web_terminal: bool = OS.has_feature("web")
 var store_id: String = SIMULATED_STORE_ID
 var machine_id: String = ""
 ## Ruta de la llave privada ES256 (PEM). Vive fuera del repositorio.
@@ -27,6 +31,9 @@ var machine_label: String = ""
 
 func _ready() -> void:
 	reload()
+	if web_terminal:
+		api_url = ""
+		simulated = false
 
 
 ## URL de la API que viene incluida en la app (ajuste kairos/api_url) o la de KAIROS_API_URL.
@@ -35,6 +42,14 @@ static func _default_api_url() -> String:
 	if not env.is_empty():
 		return env.rstrip("/")
 	return str(ProjectSettings.get_setting("kairos/api_url", "http://localhost:3000")).rstrip("/")
+
+
+## URL de la Wallet que viene incluida en la app (ajuste kairos/wallet_url) o la de KAIROS_WALLET_URL.
+static func _default_wallet_url() -> String:
+	var env := OS.get_environment("KAIROS_WALLET_URL")
+	if not env.is_empty():
+		return env.rstrip("/")
+	return str(ProjectSettings.get_setting("kairos/wallet_url", "")).rstrip("/")
 
 
 ## Vuelve a leer la configuración. Se llama al terminar de vincular la máquina.
@@ -79,6 +94,7 @@ func apply_file(path: String) -> bool:
 
 func apply(data: Dictionary) -> void:
 	api_url = str(data.get("api_url", api_url)).rstrip("/")
+	wallet_url = str(data.get("wallet_url", wallet_url)).rstrip("/")
 	store_id = str(data.get("store_id", store_id))
 	machine_id = str(data.get("machine_id", machine_id))
 	business_name = str(data.get("business_name", business_name))
@@ -95,6 +111,8 @@ func apply(data: Dictionary) -> void:
 ## Verdadero si esta ejecución debe pedir la vinculación: no hay configuración y es una app
 ## exportada (o se pidió con `-- --link`). Al desarrollar desde el editor se salta.
 func needs_link() -> bool:
+	if web_terminal:
+		return false
 	if not loaded_from.is_empty():
 		return false
 	return not OS.has_feature("editor") or OS.get_cmdline_user_args().has("--link")
@@ -103,3 +121,20 @@ func needs_link() -> bool:
 ## Solo se permite omitir la vinculación al desarrollar.
 func can_skip_link() -> bool:
 	return OS.has_feature("editor") or dev_mode
+
+
+## Recupera la identidad de una PWA ya vinculada. Devuelve false si no hay sesión activa.
+func load_web_terminal() -> bool:
+	if not web_terminal:
+		return true
+	var response := await ApiClient.get_json("/terminal/config")
+	if not response.ok or typeof(response.data) != TYPE_DICTIONARY:
+		return false
+	var machine: Dictionary = response.data.get("machine", {})
+	var tenant: Dictionary = response.data.get("tenant", {})
+	machine_id = str(machine.get("id", ""))
+	store_id = str(machine.get("storeId", ""))
+	machine_label = str(machine.get("label", ""))
+	business_name = str(tenant.get("name", ""))
+	simulated = machine_id.is_empty() or store_id.is_empty()
+	return not simulated

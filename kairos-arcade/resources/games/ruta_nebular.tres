@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="GameInfo" format=3]
 
 [ext_resource type="Script" path="res://scripts/core/game_info.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/games/ruta_nebular/game.tscn" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -8,5 +9,9 @@ id = "ruta_nebular"
 title = "RUTA NEBULAR"
 tagline = "Cruza la nebulosa sin tocar los asteroides."
 duration_seconds = 60
-playable = false
+has_time_limit = false
+playable = true
+scene = ExtResource("2")
 sort_order = 3
+qr_goal = 20000
+how_to_play = "Mueve la barra con ← → (o A D) para que la esfera rebote y destruya los bloques. Cada bloque suma puntos y sube el multiplicador. Si la esfera cae pierdes una vida; tienes 3. No hay reloj: limpia oleadas y llega a la meta."

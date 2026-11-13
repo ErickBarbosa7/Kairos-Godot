@@ -98,7 +98,12 @@ func refresh() -> void:
 		_chip.visible = true
 		_chip.add_theme_stylebox_override("panel", UiKit.chip_style(Color.TRANSPARENT, TenantTheme.NIGHT_LINE))
 		var goal := QrPolicy.goal_for(info)
-		_chip_label.text = Strings.DURATION_GOAL % [info.duration_seconds, goal] if goal > 0 else Strings.DURATION % info.duration_seconds
+		if not info.has_time_limit:
+			_chip_label.text = Strings.DURATION_UNLIMITED
+		elif goal > 0:
+			_chip_label.text = Strings.DURATION_GOAL % [info.duration_seconds, goal]
+		else:
+			_chip_label.text = Strings.DURATION % info.duration_seconds
 		_chip_label.add_theme_color_override("font_color", TenantTheme.TEXT_SECONDARY)
 
 

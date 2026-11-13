@@ -14,6 +14,9 @@ func _ready() -> void:
 		Router.to_link.call_deferred()
 		return
 	_build()
+	if AppConfig.web_terminal and not await AppConfig.load_web_terminal():
+		Router.to_link()
+		return
 	_load_brand()
 	var elapsed := 0.0
 	while elapsed < MAX_WAIT and (not _done or elapsed < MIN_WAIT):
@@ -60,3 +63,4 @@ func _build() -> void:
 	loading.add_theme_font_size_override("font_size", 32)
 	loading.add_theme_color_override("font_color", TenantTheme.TEXT_SECONDARY)
 	box.add_child(loading)
+

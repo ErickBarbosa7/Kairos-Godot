@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="GameInfo" format=3]
 
 [ext_resource type="Script" path="res://scripts/core/game_info.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/games/lane_racer/game.tscn" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -8,5 +9,9 @@ id = "lane_racer"
 title = "LANE RACER"
 tagline = "Cambia de carril y evita el tráfico a toda velocidad."
 duration_seconds = 60
-playable = false
+has_time_limit = false
+playable = true
+scene = ExtResource("2")
 sort_order = 4
+qr_goal = 18000
+how_to_play = "Cambia de carril con ← → (o A D) para evitar el tráfico. Cada vehículo que rebases suma puntos y sube el multiplicador; un choque te quita una vida y reinicia la racha. No hay reloj: la partida termina al perder tus 3 vidas, y el tráfico se vuelve más rápido conforme avanzas."

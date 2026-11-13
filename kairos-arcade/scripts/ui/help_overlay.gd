@@ -1,10 +1,10 @@
 class_name HelpOverlay
 extends CanvasLayer
-## Botón "?" en la esquina inferior derecha y panel de ayuda: lo de la pantalla actual a la
-## izquierda y qué es Kairos a la derecha. Se abre con el botón, con la tecla H o con ↓ en el
+## Botón "?" en la esquina inferior derecha y un panel de ayuda corto: tres pasos y una línea sobre
+## la pantalla actual. Se abre con el botón, con la tecla H o con ↓ en el
 ## menú. Mientras está abierto no deja pasar teclas a la pantalla de abajo.
 
-const IDLE_CLOSE_SECONDS := 60.0
+const IDLE_CLOSE_SECONDS := 30.0
 const MARGIN := 64
 const BUTTON_SIZE := 72
 
@@ -139,62 +139,45 @@ func _build_panel() -> void:
 	card.add_theme_stylebox_override("panel", UiKit.card_style(false, false))
 	center.add_child(card)
 
-	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 24)
-	card.add_child(outer)
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(960, 0)
+	box.add_theme_constant_override("separation", 22)
+	card.add_child(box)
 
-	outer.add_child(_text(Strings.HELP_TITLE, UiKit.display(900), 64, TenantTheme.TEXT, 0))
-
-	var columns := HBoxContainer.new()
-	columns.add_theme_constant_override("separation", 56)
-	outer.add_child(columns)
-
-	_left = VBoxContainer.new()
-	_left.custom_minimum_size = Vector2(740, 0)
-	_left.add_theme_constant_override("separation", 14)
-	columns.add_child(_left)
+	box.add_child(_text(HelpTexts.GENERAL_TITLE, UiKit.display(900), 64, TenantTheme.TEXT, 0))
+	for i in HelpTexts.GENERAL_STEPS.size():
+		box.add_child(_step(i + 1, HelpTexts.GENERAL_STEPS[i]))
 
 	var divider := ColorRect.new()
 	divider.color = TenantTheme.NIGHT_LINE
-	divider.custom_minimum_size = Vector2(4, 0)
-	columns.add_child(divider)
+	divider.custom_minimum_size = Vector2(0, 4)
+	box.add_child(divider)
 
-	var right := VBoxContainer.new()
-	right.custom_minimum_size = Vector2(640, 0)
-	right.add_theme_constant_override("separation", 14)
-	columns.add_child(right)
-	right.add_child(_text(HelpTexts.GENERAL_TITLE, UiKit.display(900), 44, TenantTheme.primary, 0))
-	right.add_child(_text(HelpTexts.GENERAL_INTRO, UiKit.text(500), 28, TenantTheme.TEXT, 640))
-	for i in HelpTexts.GENERAL_STEPS.size():
-		right.add_child(_step(i + 1, HelpTexts.GENERAL_STEPS[i]))
-	right.add_child(_text(HelpTexts.GENERAL_WHY_GOAL, UiKit.accent(), 30, TenantTheme.TEXT_SECONDARY, 640))
+	# Lo de la pantalla actual: una línea (y las reglas del juego, en el menú).
+	_left = VBoxContainer.new()
+	_left.add_theme_constant_override("separation", 8)
+	box.add_child(_left)
 
-	var footer := HBoxContainer.new()
-	footer.add_theme_constant_override("separation", 32)
-	outer.add_child(footer)
 	_close = UiKit.button(Strings.HELP_CLOSE, true)
 	_close.custom_minimum_size = Vector2(320, 80)
+	_close.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	_close.pressed.connect(close)
-	footer.add_child(_close)
-	var hint := _text(Strings.HELP_CLOSE_HINT, UiKit.text(600), 26, TenantTheme.TEXT_SECONDARY, 0)
-	hint.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	footer.add_child(hint)
+	box.add_child(_close)
 
 
-## Rellena la columna de la pantalla con su tema y los bloques extra del momento.
+## Rellena la parte de la pantalla actual: su línea de ayuda y los bloques extra del momento.
 func _fill() -> void:
 	for child in _left.get_children():
 		child.queue_free()
 	var data := HelpTexts.topic(_topic)
-	_left.add_child(_text("%s · %s" % [Strings.HELP_THIS_SCREEN, data.title], UiKit.display(900), 44, TenantTheme.primary, 740))
-	var blocks: Array = data.blocks.duplicate()
+	_left.add_child(_text(str(data.title).to_upper(), UiKit.display(800), 32, TenantTheme.primary, 0))
+	if not str(data.hint).is_empty():
+		_left.add_child(_text(str(data.hint), UiKit.text(600), 30, TenantTheme.TEXT, 900))
 	if _extra.is_valid():
 		var more: Variant = _extra.call()
 		if typeof(more) == TYPE_ARRAY:
-			blocks.append_array(more)
-	for block in blocks:
-		_left.add_child(_text(str(block.heading), UiKit.display(800), 32, TenantTheme.TEXT, 740))
-		_left.add_child(_text(str(block.text), UiKit.text(500), 28, TenantTheme.TEXT_SECONDARY, 740))
+			for block in more:
+				_left.add_child(_text(str(block.text), UiKit.text(500), 28, TenantTheme.TEXT_SECONDARY, 900))
 
 
 func _step(number: int, text: String) -> Control:

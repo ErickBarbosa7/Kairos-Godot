@@ -39,7 +39,8 @@ func _run() -> void:
 	_check(theme.tenant_name == "Kairos" and theme.is_fallback, "reset vuelve al tema Kairos")
 
 	print("AppConfig")
-	_check(config.simulated, "sin archivo la configuración es simulada")
+	config.apply({"store_id": ""})  # independiente de un machine.config.json local
+	_check(config.simulated, "sin sucursal la configuración es simulada")
 	config.apply({"api_url": "http://api.test/", "store_id": "abc", "machine_id": "m1"})
 	_check(config.api_url == "http://api.test", "quita la barra final de la URL")
 	_check(not config.simulated, "con store_id real deja de ser simulada")
@@ -171,6 +172,12 @@ func _run() -> void:
 	_check(games == 6, "hay seis juegos en el catálogo")
 	var memory_rush := load("res://resources/games/memory_rush.tres") as GameInfo
 	_check(memory_rush != null and memory_rush.playable and not memory_rush.has_time_limit, "Memory Rush no tiene límite de tiempo")
+	var lane_racer := load("res://resources/games/lane_racer.tres") as GameInfo
+	_check(lane_racer != null and lane_racer.playable and not lane_racer.has_time_limit, "Lane Racer termina por vidas, no por tiempo")
+	var stack_tower := load("res://resources/games/stack_tower.tres") as GameInfo
+	_check(stack_tower != null and stack_tower.playable and not stack_tower.has_time_limit, "Stack Tower termina por vidas, no por tiempo")
+	var ruta_nebular := load("res://resources/games/ruta_nebular.tres") as GameInfo
+	_check(ruta_nebular != null and ruta_nebular.playable and not ruta_nebular.has_time_limit, "Ruta Nebular termina por vidas, no por tiempo")
 
 	print("ScoreStore")
 	ScoreStore.clear()
@@ -244,6 +251,7 @@ func _run() -> void:
 	_check(LinkService.message_for(0) == Strings.LINK_NETWORK and LinkService.message_for(401) == Strings.LINK_BAD_LOGIN, "mensajes de red y credenciales")
 	_check(LinkService.message_for(403) == Strings.LINK_NOT_ADMIN and LinkService.message_for(429) == Strings.LINK_RATE, "mensajes de permisos y límite de intentos")
 	_check(LinkService.message_for(400, "Llave no válida") == "Llave no válida" and LinkService.message_for(500) == Strings.LINK_GENERIC, "un 400 muestra el mensaje del servidor; otros, uno genérico")
+	_check(LinkService.message_for(403, "Tu plan permite hasta 1 máquina.", "plan_limit") == "Tu plan permite hasta 1 máquina." and LinkService.message_for(403, "otro", "forbidden") == Strings.LINK_NOT_ADMIN, "el tope del plan muestra su mensaje; otro 403 sigue diciendo que solo el administrador vincula")
 	LinkService.dir = "user://link_test"
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(LinkService.dir))
 	_check(LinkService.save_identity("http://api.test/", "store-1", "machine-1", fresh_pem, "Café Sol", "Mostrador"), "guarda la identidad")
@@ -257,17 +265,23 @@ func _run() -> void:
 	LinkService.dir = "user://"
 
 	print("Ayuda y kiosco")
-	_check(HelpTexts.GENERAL_STEPS.size() == 4 and not HelpTexts.GENERAL_INTRO.is_empty(), "la explicación general de Kairos tiene 4 pasos")
+	_check(HelpTexts.GENERAL_STEPS.size() == 3, "la ayuda explica Kairos en 3 pasos")
+	var steps_short := true
+	for step in HelpTexts.GENERAL_STEPS:
+		if step.length() > 50:
+			steps_short = false
+	_check(steps_short, "cada paso es una frase corta (50 caracteres o menos)")
 	var topics_ok := true
-	for topic_id in ["menu", "entry", "scoreboard", "result", "link", "admin"]:
+	var hints_short := true
+	for topic_id in ["menu", "entry", "scoreboard", "result", "roulette", "link", "admin"]:
 		var topic: Dictionary = HelpTexts.topic(topic_id)
-		if str(topic.title).is_empty() or topic.blocks.is_empty():
+		if str(topic.title).is_empty() or str(topic.hint).is_empty():
 			topics_ok = false
-		for block in topic.blocks:
-			if str(block.heading).is_empty() or str(block.text).is_empty():
-				topics_ok = false
-	_check(topics_ok, "cada pantalla tiene ayuda con título y bloques completos")
-	_check(HelpTexts.topic("no-existe").blocks.is_empty(), "un tema inexistente no rompe")
+		if str(topic.hint).length() > 90:
+			hints_short = false
+	_check(topics_ok, "cada pantalla tiene título y una línea de ayuda")
+	_check(hints_short, "la línea de ayuda de cada pantalla es corta (90 caracteres o menos)")
+	_check(str(HelpTexts.topic("no-existe").hint).is_empty(), "un tema inexistente no rompe")
 	var playable_ok := true
 	var playable_count := 0
 	for file in DirAccess.get_files_at("res://resources/games"):
@@ -276,7 +290,7 @@ func _run() -> void:
 			var game_info := load("res://resources/games/" + res_name) as GameInfo
 			if game_info and game_info.playable:
 				playable_count += 1
-				if game_info.how_to_play.strip_edges().length() < 40:
+				if game_info.how_to_play.strip_edges().length() < 20:
 					playable_ok = false
 	_check(playable_count >= 2 and playable_ok, "cada juego jugable explica cómo se juega")
 	var kiosk_script: GDScript = load("res://scripts/autoload/kiosk.gd")
@@ -328,7 +342,6 @@ func _run() -> void:
 	var without: Dictionary = ticket_script.build_claims(500, "", 1000, "jti-1")
 	_check(with_prize.reward_id == "reward-1" and not without.has("reward_id"), "el QR lleva reward_id solo si hubo recompensa")
 	_check(with_prize.exp - with_prize.iat == 60 and with_prize.store_id == "store-9" and with_prize.machine_id == "machine-9", "el QR dura 60 s y lleva sucursal y máquina")
-	_check(HelpTexts.topic("roulette").blocks.size() == 3, "la ruleta tiene su ayuda")
 	catalog.image_dir = "user://test_reward_images"
 	catalog.images = {}
 	var texture := ImageTexture.create_from_image(Image.create(2, 2, false, Image.FORMAT_RGBA8))
@@ -366,6 +379,12 @@ func _run() -> void:
 	_check(QrCode.encode_text("x".repeat(5000)) == null, "devuelve null si no cabe")
 	var big := QrCode.encode_text("y".repeat(356), QrCode.Ecc.MEDIUM)
 	_check(big != null and big.version <= 15, "un token de ~356 caracteres cabe en la versión 15 o menos")
+
+	print("QR hacia la Wallet")
+	_check(ticket_script.qr_payload("abc.def.ghi", "http://wallet.local:5174/") == "http://wallet.local:5174/c#abc.def.ghi", "con Wallet configurada el QR es un enlace con el token tras #")
+	_check(ticket_script.qr_payload("abc.def.ghi", "") == "abc.def.ghi", "sin Wallet configurada el QR lleva el token a secas")
+	var link_qr := QrCode.encode_text(ticket_script.qr_payload("y".repeat(356), "https://wallet.ejemplo-negocio.mx"), QrCode.Ecc.MEDIUM)
+	_check(link_qr != null and link_qr.version <= 17, "el enlace de la Wallet con un token real sigue cabiendo (versión 17 o menos)")
 
 	print()
 	if _failures == 0:

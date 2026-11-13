@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="GameInfo" format=3]
 
 [ext_resource type="Script" path="res://scripts/core/game_info.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/games/stack_tower/game.tscn" id="2"]
 
 [resource]
 script = ExtResource("1")
@@ -8,5 +9,9 @@ id = "stack_tower"
 title = "STACK TOWER"
 tagline = "Apila bloques con precisión y construye la torre más alta."
 duration_seconds = 60
-playable = false
+has_time_limit = false
+playable = true
+scene = ExtResource("2")
 sort_order = 6
+qr_goal = 18000
+how_to_play = "Pulsa ESPACIO cuando el bloque móvil quede sobre la torre. Cada bloque bien colocado suma puntos; si no alcanza el bloque anterior pierdes una vida. No hay reloj: la partida termina al perder tus 3 vidas. Los bloques se mueven más rápido mientras avanzas."

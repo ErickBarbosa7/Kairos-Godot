@@ -11,7 +11,10 @@ const KEY_NAME := "machine.private.pem"
 static var dir := "user://"
 
 
-static func message_for(status: int, server_message: String = "") -> String:
+static func message_for(status: int, server_message: String = "", code: String = "") -> String:
+	# El tope del plan trae su propio mensaje claro desde el servidor.
+	if code == "plan_limit" and not server_message.is_empty():
+		return server_message
 	match status:
 		0:
 			return Strings.LINK_NETWORK
@@ -28,10 +31,12 @@ static func message_for(status: int, server_message: String = "") -> String:
 
 static func _error_message(response: Dictionary) -> String:
 	var server := ""
+	var code := ""
 	var data: Variant = response.get("data")
 	if typeof(data) == TYPE_DICTIONARY and typeof(data.get("error")) == TYPE_DICTIONARY:
 		server = str(data.error.get("message", ""))
-	return message_for(int(response.status), server)
+		code = str(data.error.get("code", ""))
+	return message_for(int(response.status), server, code)
 
 
 ## Paso 1. Devuelve { ok, token, business_name, message }.

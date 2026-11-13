@@ -28,6 +28,15 @@ static func build_claims(score: int, reward_id: String, now: int, jti: String) -
 	return claims
 
 
+## Lo que se dibuja en el QR. Con Wallet configurada es un enlace (`<wallet>/c#<token>`): la cámara
+## del teléfono lo abre y la Wallet acredita sola, sin instalar nada antes. El token va tras `#`, que
+## el navegador nunca envía a ningún servidor. Sin Wallet configurada, el token a secas.
+static func qr_payload(token: String, wallet_url: String) -> String:
+	if wallet_url.is_empty() or token.is_empty():
+		return token
+	return "%s/c#%s" % [wallet_url.rstrip("/"), token]
+
+
 static func create(score: int, reward_id: String = "") -> QrTicket:
 	var ticket := QrTicket.new()
 	if AppConfig.simulated or AppConfig.machine_id.is_empty():
@@ -49,3 +58,20 @@ static func create(score: int, reward_id: String = "") -> QrTicket:
 
 func seconds_left() -> float:
 	return maxf(float(expires_at) - Time.get_unix_time_from_system(), 0.0)
+
+## La PWA pide al servidor un QR firmado; su sesión viaja en cookie HttpOnly.
+static func create_web(score: int, reward_id: String = "") -> QrTicket:
+	var ticket := QrTicket.new()
+	var body := {"score": score}
+	if not reward_id.is_empty():
+		body["rewardId"] = reward_id
+	var response := await ApiClient.send_json(HTTPClient.METHOD_POST, AppConfig.api_url, "/terminal/claims", body)
+	if not response.ok or typeof(response.data) != TYPE_DICTIONARY:
+		ticket.problem = Problem.SIGN_FAILED
+		return ticket
+	ticket.token = str(response.data.get("token", ""))
+	var expires_ms := int(response.data.get("expiresAt", 0))
+	ticket.expires_at = expires_ms / 1000
+	if ticket.token.is_empty() or ticket.expires_at <= int(Time.get_unix_time_from_system()):
+		ticket.problem = Problem.SIGN_FAILED
+	return ticket

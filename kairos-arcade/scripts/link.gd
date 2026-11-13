@@ -22,6 +22,8 @@ var _label_edit: LineEdit
 var _primary: Button
 var _store_buttons: Array[Button] = []
 var _help: HelpOverlay
+var _pairing_code := ""
+var _pairing_secret := ""
 
 
 func _ready() -> void:
@@ -38,13 +40,62 @@ func _ready() -> void:
 	_content.add_theme_constant_override("separation", 20)
 	center.add_child(_content)
 	_help = HelpOverlay.attach(self, "link")
-	_show_login()
+	if AppConfig.web_terminal:
+		_show_web_pair()
+	else:
+		_show_login()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("back") and not AppConfig.loaded_from.is_empty() and _step != Step.DONE:
 		Router.to_menu()
 		get_viewport().set_input_as_handled()
+
+
+## La PWA nunca pide credenciales de administrador: muestra un código y espera aprobación.
+func _show_web_pair() -> void:
+	_step = Step.LOGIN
+	_clear()
+	_content.add_child(_label("Vincula esta tableta", UiKit.display(900), 80, TenantTheme.TEXT))
+	_content.add_child(_label("En el panel Kairos abre Sucursales y máquinas, pulsa Vincular tableta y escribe este código.", UiKit.text(600), 32, TenantTheme.TEXT_SECONDARY))
+	_content.add_child(_error_label())
+	_primary = UiKit.button("Generar código", true)
+	_primary.pressed.connect(_create_web_pairing)
+	_content.add_child(_primary)
+	_create_web_pairing.call_deferred()
+
+func _create_web_pairing() -> void:
+	if _busy:
+		return
+	_set_busy(true, "Generando código…")
+	var response := await ApiClient.send_json(HTTPClient.METHOD_POST, AppConfig.api_url, "/terminal/pairings", {})
+	if not response.ok or typeof(response.data) != TYPE_DICTIONARY:
+		_set_busy(false, "Intentar de nuevo")
+		_fail("No se pudo conectar. Revisa la red e inténtalo de nuevo.")
+		return
+	_pairing_code = str(response.data.get("code", ""))
+	_pairing_secret = str(response.data.get("secret", ""))
+	_set_busy(true, "Esperando aprobación…")
+	var code_label := _label(_pairing_code, UiKit.display(900), 112, TenantTheme.REWARD)
+	code_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_content.add_child(code_label)
+	_content.add_child(_label("Este código vence en 10 minutos.", UiKit.text(600), 28, TenantTheme.TEXT_SECONDARY))
+	_poll_web_pairing()
+
+func _poll_web_pairing() -> void:
+	while not _pairing_code.is_empty():
+		await get_tree().create_timer(2.0).timeout
+		var response := await ApiClient.send_json(HTTPClient.METHOD_POST, AppConfig.api_url, "/terminal/pairings/%s/complete" % _pairing_code, {"secret": _pairing_secret})
+		if response.ok:
+			_pairing_code = ""
+			_pairing_secret = ""
+			Router.to_boot()
+			return
+		if response.status == 400:
+			_pairing_code = ""
+			_set_busy(false, "Generar código")
+			_fail("El código venció. Genera uno nuevo.")
+			return
 
 
 func _clear() -> void:

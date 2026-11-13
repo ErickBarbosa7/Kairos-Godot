@@ -71,7 +71,13 @@ func time_limit_seconds() -> float:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("back") and phase in [Phase.COUNTDOWN, Phase.PLAYING]:
+	if event.is_action_pressed("back"):
+		request_abandon()
+
+
+## Abre el diálogo de abandono (tecla Esc o botón "Salir" de la pantalla).
+func request_abandon() -> void:
+	if phase in [Phase.COUNTDOWN, Phase.PLAYING]:
 		phase = Phase.ABANDONING
 		abandon_left = 10.0
 		_hud.show_abandon()
@@ -123,6 +129,10 @@ func _check_goal() -> void:
 
 
 func _end(reason: String) -> void:
+	# Un solo cierre: si se llamara otra vez durante ENDING reiniciaría el contador y la
+	# partida nunca terminaría.
+	if phase == Phase.ENDING:
+		return
 	end_reason = reason
 	phase = Phase.ENDING
 	ending_left = ENDING_SECONDS

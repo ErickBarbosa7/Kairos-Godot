@@ -18,6 +18,12 @@ func _draw() -> void:
 	if art_id == "memory_rush":
 		_draw_memory()
 		return
+	if art_id == "stack_tower":
+		_draw_stack()
+		return
+	if art_id == "ruta_nebular":
+		_draw_nebula()
+		return
 	for star in STARS:
 		draw_circle(star * size, 4.0, star_color)
 	var c := Vector2(size.x / 2, size.y * 0.64)
@@ -57,3 +63,24 @@ func _draw_memory() -> void:
 		var rect := Rect2(origin + Vector2(col * (pad_size.x + 16), row * (pad_size.y + 16)), pad_size)
 		draw_rect(rect, colors[i].darkened(0.16))
 		draw_rect(rect, Color.WHITE, false, 3.0)
+
+
+func _draw_stack() -> void:
+	var widths := [size.x * 0.72, size.x * 0.58, size.x * 0.42, size.x * 0.28]
+	var colors := [ship_color, TenantTheme.REWARD, TenantTheme.SUCCESS, TenantTheme.DANGER]
+	for i in widths.size():
+		var width: float = widths[i]
+		var rect := Rect2(Vector2((size.x - width) / 2.0, size.y * 0.76 - i * 46.0), Vector2(width, 36))
+		draw_rect(rect, colors[i])
+		draw_rect(rect, Color.WHITE, false, 3.0)
+
+
+func _draw_nebula() -> void:
+	var colors := [ship_color, TenantTheme.REWARD, TenantTheme.SUCCESS, TenantTheme.DANGER]
+	for row in 3:
+		for col in 6:
+			var rect := Rect2(Vector2(size.x * 0.16 + col * size.x * 0.115, size.y * 0.16 + row * size.y * 0.16), Vector2(size.x * 0.09, size.y * 0.11))
+			draw_rect(rect, colors[(row + col) % colors.size()])
+			draw_rect(rect, TenantTheme.NIGHT, false, 2.0)
+	draw_rect(Rect2(Vector2(size.x * 0.31, size.y * 0.78), Vector2(size.x * 0.38, 10)), ship_color)
+	draw_circle(Vector2(size.x * 0.55, size.y * 0.64), 12.0, Color.WHITE)

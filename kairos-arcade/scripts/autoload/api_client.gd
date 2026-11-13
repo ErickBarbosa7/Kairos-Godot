@@ -8,7 +8,7 @@ const MAX_IMAGE_BYTES := 2 * 1024 * 1024
 ## GET con JSON. Devuelve { ok: bool, status: int, data: Variant }.
 ## status 0 significa sin red o tiempo agotado.
 func get_json(path: String) -> Dictionary:
-	if AppConfig.simulated:
+	if AppConfig.simulated and not AppConfig.web_terminal:
 		return {"ok": false, "status": 0, "data": null}
 	var result := await _request(AppConfig.api_url + path)
 	if result.error != OK:
@@ -20,7 +20,7 @@ func get_json(path: String) -> Dictionary:
 
 ## Descarga una imagen PNG, JPEG o WebP. Devuelve ImageTexture o null.
 func load_image(url: String) -> ImageTexture:
-	if url.is_empty() or AppConfig.simulated:
+	if AppConfig.simulated or not (url.begins_with("http://") or url.begins_with("https://")):
 		return null
 	var result := await _request(url)
 	if result.error != OK or result.status != 200:

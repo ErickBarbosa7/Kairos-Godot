@@ -22,10 +22,12 @@ ArcadeState="*res://scripts/autoload/arcade_state.gd"
 ApiClient="*res://scripts/autoload/api_client.gd"
 TenantTheme="*res://scripts/autoload/tenant_theme.gd"
 Kiosk="*res://scripts/autoload/kiosk.gd"
+TouchInput="*res://scripts/autoload/touch_input.gd"
 
 [kairos]
 
 api_url="http://localhost:3000"
+wallet_url="http://localhost:5174"
 
 [display]
 
@@ -34,7 +36,7 @@ window/size/viewport_height=1080
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/stretch/aspect="keep"
 
 [input]
 

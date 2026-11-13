@@ -9,16 +9,20 @@ var game: ArcadeGame
 var _dialog: Control
 var _dialog_body: Label
 var _keep_button: Button
+var _exit_button: Button
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_dialog()
+	_build_exit_button()
 
 
 func _process(_delta: float) -> void:
 	queue_redraw()
+	if _exit_button != null:
+		_exit_button.visible = game != null and not _dialog.visible and game.phase in [game.Phase.COUNTDOWN, game.Phase.PLAYING]
 	if _dialog.visible:
 		_dialog_body.text = Strings.ABANDON_BODY % ceili(game.abandon_left)
 
@@ -162,6 +166,23 @@ func _build_dialog() -> void:
 	var quit_button := UiKit.button(Strings.ABANDON_QUIT, false, true)
 	quit_button.pressed.connect(func() -> void: game.quit_to_menu())
 	row.add_child(quit_button)
+
+
+## Botón visible para salir sin teclado. Abre el mismo diálogo que Esc. Sin foco, para que
+## Espacio o Enter del juego no lo activen por accidente. La zona coincide con la que
+## TouchInput ignora al sostener movimientos.
+func _build_exit_button() -> void:
+	_exit_button = UiKit.button(Strings.HUD_EXIT, false)
+	_exit_button.focus_mode = Control.FOCUS_NONE
+	_exit_button.custom_minimum_size = Vector2(220, 80)
+	_exit_button.add_theme_font_size_override("font_size", 32)
+	_exit_button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	_exit_button.offset_left = -MARGIN - 220
+	_exit_button.offset_top = -MARGIN - 80
+	_exit_button.offset_right = -MARGIN
+	_exit_button.offset_bottom = -MARGIN
+	_exit_button.pressed.connect(func() -> void: game.request_abandon())
+	add_child(_exit_button)
 
 
 func _on_keep() -> void:

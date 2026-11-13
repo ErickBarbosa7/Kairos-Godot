@@ -5,15 +5,21 @@ extends Control
 
 const MARGIN := 64
 const QR_SIDE := 480
+const POINTS_QR_SIDE := 280
 const IDLE_TO_MENU := 90.0
 const STEP := 0.4
 
 var _score_label: Label
 var _chip: Control
 var _again: Button
+var _board: Button
+var _menu: Button
 var _idle := 0.0
 var _ticket: QrTicket
 var _qr_slot: VBoxContainer
+## Donde vive el QR (y su aviso de vencimiento). En el modo de puntos comparte columna con el avance a la meta.
+var _ticket_box: VBoxContainer
+var _points_mode := false
 var _seconds: Label
 var _bar_fill: ColorRect
 var _bar_back: ColorRect
@@ -22,8 +28,24 @@ var _expired_shown := false
 
 func _ready() -> void:
 	_build()
+	_wire_focus()
 	_animate()
 	HelpOverlay.attach(self, "result")
+
+
+## Orden fijo para las flechas: "Jugar otra vez" arriba; "Marcador" y "Volver al menú" abajo.
+## La búsqueda automática por posición saltaba "Volver al menú" desde "Jugar otra vez".
+func _wire_focus() -> void:
+	_link(_again, _again, _board, _again, _board)  # arriba, abajo, izquierda, derecha
+	_link(_board, _again, _again, _board, _menu)
+	_link(_menu, _again, _again, _board, _menu)
+
+
+func _link(b: Button, up: Control, down: Control, left: Control, right: Control) -> void:
+	b.focus_neighbor_top = b.get_path_to(up)
+	b.focus_neighbor_bottom = b.get_path_to(down)
+	b.focus_neighbor_left = b.get_path_to(left)
+	b.focus_neighbor_right = b.get_path_to(right)
 
 
 func _process(delta: float) -> void:
@@ -43,6 +65,14 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey or event is InputEventJoypadButton:
 		_idle = 0.0
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Esc / botón "back": salida siempre disponible, también tras morir.
+	if event.is_action_pressed("back"):
+		get_viewport().set_input_as_handled()
+		set_process(false)
+		Router.to_menu()
 
 
 func _build() -> void:
@@ -96,10 +126,12 @@ func _build_left() -> Control:
 	var secondary := HBoxContainer.new()
 	secondary.add_theme_constant_override("separation", 16)
 	var board := UiKit.button(Strings.RESULT_SCOREBOARD, false)
+	_board = board
 	board.custom_minimum_size = Vector2(0, 96)
 	board.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	board.pressed.connect(func() -> void: Router.to_scoreboard(ArcadeState.game_id, Router.RESULT))
 	var menu := UiKit.button(Strings.RESULT_MENU, false)
+	_menu = menu
 	menu.custom_minimum_size = Vector2(0, 96)
 	menu.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	menu.pressed.connect(Router.to_menu)
@@ -140,26 +172,72 @@ func _build_right() -> Control:
 
 	var goal := QrPolicy.goal_for(Router.current_game)
 	var score := ArcadeState.last_score
+	_ticket_box = VBoxContainer.new()
+	_ticket_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	_ticket_box.add_theme_constant_override("separation", 12)
 	if not QrPolicy.earned(score, goal):
+		# No llegó a la meta: sin ruleta, pero sus puntos no se pierden. Se suman con un QR sin premio.
 		_build_goal_panel(goal, score)
+		_qr_slot.add_child(_ticket_box)
+		if score > 0:
+			_points_mode = true
+			_start_points_ticket(score)
 		return center
+	_qr_slot.add_child(_ticket_box)
 	var reward: Dictionary = ArcadeState.won_reward
 	if reward.is_empty():
 		# Llegó a la meta pero el negocio no tiene recompensas que girar.
-		_qr_slot.add_child(_info_panel(Strings.NO_REWARDS_TITLE, Strings.NO_REWARDS_NOTE, TenantTheme.WARNING))
+		_ticket_box.add_child(_info_panel(Strings.NO_REWARDS_TITLE, Strings.NO_REWARDS_NOTE, TenantTheme.WARNING))
+		return center
+	if AppConfig.web_terminal:
+		_ticket_box.add_child(_label("Preparando tu código…", UiKit.text(700), 30, TenantTheme.TEXT_SECONDARY))
+		_load_web_ticket.call_deferred(score, reward)
 		return center
 	_ticket = QrTicket.create(score, str(reward.id))
-	if _ticket.problem != QrTicket.Problem.NONE:
-		_build_problem_panel(_ticket.problem)
-		return center
-	var qr := QrCode.encode_text(_ticket.token, QrCode.Ecc.MEDIUM)
+	_build_ticket_panel(reward)
+	return center
+
+
+func _load_web_ticket(score: int, reward: Dictionary) -> void:
+	_ticket = await QrTicket.create_web(score, str(reward.id))
+	for child in _ticket_box.get_children():
+		child.queue_free()
+	_build_ticket_panel(reward)
+
+
+## QR de puntos para quien no llegó a la meta. Si la máquina no puede firmar (modo de prueba, sin
+## llave) no muestra nada: el aviso de "esta máquina no puede entregar recompensas" sería confuso aquí.
+func _start_points_ticket(score: int) -> void:
+	if AppConfig.web_terminal:
+		_load_web_points_ticket.call_deferred(score)
+		return
+	_ticket = QrTicket.create(score)
+	_build_ticket_panel({})
+
+
+func _load_web_points_ticket(score: int) -> void:
+	_ticket = await QrTicket.create_web(score)
+	_build_ticket_panel({})
+
+
+func _build_ticket_panel(reward: Dictionary) -> void:
+	if _ticket == null or _ticket.problem != QrTicket.Problem.NONE:
+		if _points_mode:
+			_ticket = null
+			return
+		_build_problem_panel(_ticket.problem if _ticket != null else QrTicket.Problem.SIGN_FAILED)
+		return
+	var qr := QrCode.encode_text(QrTicket.qr_payload(_ticket.token, AppConfig.wallet_url), QrCode.Ecc.MEDIUM)
 	if qr == null:
+		if _points_mode:
+			_ticket = null
+			return
 		_ticket.problem = QrTicket.Problem.SIGN_FAILED
 		_build_problem_panel(_ticket.problem)
-		return center
-	PlayStats.record_qr_issued(ArcadeState.game_id)
+		return
+	if not _points_mode:
+		PlayStats.record_qr_issued(ArcadeState.game_id)
 	_build_qr_panel(qr, reward)
-	return center
 
 
 func _white_panel() -> PanelContainer:
@@ -176,8 +254,13 @@ func _white_panel() -> PanelContainer:
 
 
 func _build_qr_panel(qr: QrCode, reward: Dictionary) -> void:
+	var side := POINTS_QR_SIDE if _points_mode else QR_SIDE
+	if _points_mode:
+		_ticket_box.add_child(_label(Strings.POINTS_TITLE, UiKit.display(900), 40, TenantTheme.REWARD))
+		_add_qr_view_and_timer(qr, side)
+		return
 	# Qué ganó, encima del código: es lo primero que debe ver.
-	_qr_slot.add_child(_label(Strings.RESULT_REWARD_LABEL, UiKit.text(700), 24, TenantTheme.TEXT_SECONDARY))
+	_ticket_box.add_child(_label(Strings.RESULT_REWARD_LABEL, UiKit.text(700), 24, TenantTheme.TEXT_SECONDARY))
 	var picture: Texture2D = RewardCatalog.images.get(str(reward.id))
 	var banner := HBoxContainer.new()
 	banner.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -195,12 +278,17 @@ func _build_qr_panel(qr: QrCode, reward: Dictionary) -> void:
 	reward_label.custom_minimum_size = Vector2((QR_SIDE - 140.0) if picture != null else (QR_SIDE + 40.0), 0)
 	reward_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT if picture != null else HORIZONTAL_ALIGNMENT_CENTER
 	banner.add_child(reward_label)
-	_qr_slot.add_child(banner)
+	_ticket_box.add_child(banner)
+	_add_qr_view_and_timer(qr, side)
+
+
+func _add_qr_view_and_timer(qr: QrCode, side: int) -> void:
 	var panel := _white_panel()
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	var view := QrView.new()
-	view.setup(qr, QR_SIDE)
+	view.setup(qr, side)
 	panel.add_child(view)
-	_qr_slot.add_child(panel)
+	_ticket_box.add_child(panel)
 
 	var timer_row := HBoxContainer.new()
 	timer_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -209,7 +297,7 @@ func _build_qr_panel(qr: QrCode, reward: Dictionary) -> void:
 	_seconds = _label("60", UiKit.display(900), 72, TenantTheme.TEXT)
 	timer_row.add_child(_seconds)
 	timer_row.add_child(_label("s", UiKit.display(800), 40, TenantTheme.TEXT_SECONDARY))
-	_qr_slot.add_child(timer_row)
+	_ticket_box.add_child(timer_row)
 
 	_bar_back = ColorRect.new()
 	_bar_back.color = TenantTheme.NIGHT_RAISED
@@ -218,19 +306,20 @@ func _build_qr_panel(qr: QrCode, reward: Dictionary) -> void:
 	_bar_fill.color = TenantTheme.primary
 	_bar_fill.size = Vector2(view.custom_minimum_size.x, 14)
 	_bar_back.add_child(_bar_fill)
-	_qr_slot.add_child(_bar_back)
+	_ticket_box.add_child(_bar_back)
 
-	var hint := _label(Strings.QR_SCAN, UiKit.text(600), 28, TenantTheme.TEXT)
+	var hint := _label(Strings.POINTS_NOTE if _points_mode else Strings.QR_SCAN, UiKit.text(600), 28, TenantTheme.TEXT)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size = Vector2(view.custom_minimum_size.x, 0)
-	_qr_slot.add_child(hint)
+	_ticket_box.add_child(hint)
 
 
 func _show_expired() -> void:
 	_expired_shown = true
-	for child in _qr_slot.get_children():
+	for child in _ticket_box.get_children():
 		child.queue_free()
-	_qr_slot.add_child(_info_panel(Strings.QR_EXPIRED_TITLE, Strings.QR_EXPIRED_NOTE, TenantTheme.WARNING))
+	var note := Strings.QR_EXPIRED_POINTS_NOTE if _points_mode else Strings.QR_EXPIRED_NOTE
+	_ticket_box.add_child(_info_panel(Strings.QR_EXPIRED_TITLE, note, TenantTheme.WARNING))
 
 
 func _build_goal_panel(goal: int, score: int) -> void:
@@ -239,36 +328,44 @@ func _build_goal_panel(goal: int, score: int) -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 20)
 	box.custom_minimum_size = Vector2(QR_SIDE + 64, 0)
-	box.add_child(_label(Strings.GOAL_TITLE, UiKit.display(900), 56, TenantTheme.TEXT))
-	var note := _label(Strings.GOAL_NOTE % (goal - score), UiKit.text(600), 32, TenantTheme.TEXT_SECONDARY)
+	var compact := _points_mode_pending(score)
+	box.add_theme_constant_override("separation", 10 if compact else 20)
+	box.add_child(_label(Strings.GOAL_TITLE, UiKit.display(900), 40 if compact else 56, TenantTheme.TEXT))
+	var note := _label(Strings.GOAL_NOTE % (goal - score), UiKit.text(600), 24 if compact else 32, TenantTheme.TEXT_SECONDARY)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(note)
 
 	var back := ColorRect.new()
 	back.color = TenantTheme.NIGHT_RAISED
-	back.custom_minimum_size = Vector2(0, 28)
+	back.custom_minimum_size = Vector2(0, 20 if compact else 28)
 	var fill := ColorRect.new()
 	fill.color = TenantTheme.primary
-	fill.size = Vector2((QR_SIDE + 64) * clampf(float(score) / goal, 0.0, 1.0), 28)
+	fill.size = Vector2((QR_SIDE + 64) * clampf(float(score) / goal, 0.0, 1.0), 20 if compact else 28)
 	back.add_child(fill)
 	box.add_child(back)
 
 	var numbers := HBoxContainer.new()
-	numbers.add_child(_label(str(score), UiKit.display(900), 48, TenantTheme.REWARD))
+	numbers.add_child(_label(str(score), UiKit.display(900), 36 if compact else 48, TenantTheme.REWARD))
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	numbers.add_child(spacer)
-	numbers.add_child(_label(Strings.GOAL_TARGET % goal, UiKit.display(900), 48, TenantTheme.TEXT))
+	numbers.add_child(_label(Strings.GOAL_TARGET % goal, UiKit.display(900), 36 if compact else 48, TenantTheme.TEXT))
 	box.add_child(numbers)
 
-	var tip := _label(Strings.GOAL_TIP, UiKit.accent(), 36, TenantTheme.TEXT_SECONDARY)
-	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(tip)
+	if not compact:
+		var tip := _label(Strings.GOAL_TIP, UiKit.accent(), 36, TenantTheme.TEXT_SECONDARY)
+		tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(tip)
 
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", UiKit.card_style(false, false))
 	panel.add_child(box)
 	_qr_slot.add_child(panel)
+
+
+## El panel de la meta se compacta cuando comparte columna con el QR de puntos.
+func _points_mode_pending(score: int) -> bool:
+	return score > 0
 
 
 func _build_problem_panel(problem: QrTicket.Problem) -> void:
@@ -277,7 +374,7 @@ func _build_problem_panel(problem: QrTicket.Problem) -> void:
 		note = Strings.QR_PROBLEM_CONFIG
 	elif problem == QrTicket.Problem.NO_KEY:
 		note = Strings.QR_PROBLEM_KEY
-	_qr_slot.add_child(_info_panel(Strings.QR_PROBLEM_TITLE, note, TenantTheme.DANGER))
+	_ticket_box.add_child(_info_panel(Strings.QR_PROBLEM_TITLE, note, TenantTheme.DANGER))
 
 
 func _info_panel(title: String, note: String, accent: Color) -> Control:
