@@ -317,6 +317,10 @@ func _run() -> void:
 	])
 	_check(clean.size() == 1 and clean[0].title == "Café gratis" and clean[0].description == "", "sanitize quita lo inservible y limpia espacios")
 	_check(catalog.sanitize("basura").is_empty() and catalog.sanitize(null).is_empty(), "una respuesta que no es lista no rompe")
+	var banner: GDScript = load("res://scripts/core/campaign_banner.gd")
+	var names: Array = banner.sanitize([{"name": " Doble puntos "}, {"name": ""}, "x", {"name": "A"}, {"name": "B"}, {"name": "C"}])
+	_check(names == ["Doble puntos", "A", "B"] and banner.line(names) == "Doble puntos · A · B", "el banner limpia nombres, limita a 3 y los une")
+	_check(banner.sanitize(null).is_empty() and banner.line([]) == "", "el banner tolera respuestas inválidas")
 	var many: Array = []
 	for i in 20:
 		many.append({"id": str(i), "title": "R%d" % i})

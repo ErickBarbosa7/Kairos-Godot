@@ -5,6 +5,7 @@ extends RefCounted
 const BOOT_LOADING := "Preparando tu partida"
 const MENU_TITLE_PREFIX := "Elige tu "
 const MENU_TITLE_WORD := "juego"
+const CAMPAIGN_PREFIX := "🔥 Hoy:"
 const POWERED_BY := "powered by"
 const IN_PROGRESS := "EN PROCESO"
 const PRESS_TO_PLAY := "PULSA ESPACIO"

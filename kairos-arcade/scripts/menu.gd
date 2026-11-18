@@ -14,6 +14,7 @@ var _logo: TextureRect
 var _logo_fallback: ColorRect
 var _name: Label
 var _notice: Label
+var _campaign: Label
 var _hidden_presses: Array[int] = []
 var _help: HelpOverlay
 
@@ -24,6 +25,7 @@ func _ready() -> void:
 	TenantTheme.theme_changed.connect(_apply_brand)
 	_apply_brand()
 	_select(_first_playable())
+	_load_campaign()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -64,6 +66,12 @@ func _build() -> void:
 
 	column.add_child(_build_header())
 	column.add_child(_build_title())
+
+	_campaign = Label.new()
+	_campaign.visible = false
+	_campaign.add_theme_font_override("font", UiKit.accent())
+	_campaign.add_theme_font_size_override("font_size", 44)
+	column.add_child(_campaign)
 
 	_game_scroller = ScrollContainer.new()
 	_game_scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
@@ -190,6 +198,14 @@ func _load_games() -> Array[GameInfo]:
 	return games
 
 
+func _load_campaign() -> void:
+	var names: Array = await CampaignBanner.fetch()
+	if not is_instance_valid(_campaign):
+		return
+	_campaign.text = "%s %s" % [Strings.CAMPAIGN_PREFIX, CampaignBanner.line(names)]
+	_campaign.visible = not names.is_empty()
+
+
 func _apply_brand() -> void:
 	_name.text = TenantTheme.tenant_name.to_upper()
 	_name.add_theme_color_override("font_color", TenantTheme.TEXT)
@@ -198,6 +214,7 @@ func _apply_brand() -> void:
 	_logo_fallback.visible = TenantTheme.logo == null
 	_logo_fallback.color = TenantTheme.primary
 	_notice.add_theme_color_override("font_color", TenantTheme.WARNING)
+	_campaign.add_theme_color_override("font_color", TenantTheme.primary)
 	for card in _cards:
 		card.refresh()
 
